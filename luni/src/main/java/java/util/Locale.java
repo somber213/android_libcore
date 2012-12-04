@@ -270,7 +270,9 @@ public final class Locale implements Cloneable, Serializable {
      */
     public Locale(String language, String country, String variant) {
         if (language == null || country == null || variant == null) {
-            throw new NullPointerException();
+            throw new NullPointerException("language=" + language +
+                                           ",country=" + country +
+                                           ",variant=" + variant);
         }
         if (language.isEmpty() && country.isEmpty()) {
             languageCode = "";
@@ -563,7 +565,7 @@ public final class Locale implements Cloneable, Serializable {
      */
     public synchronized static void setDefault(Locale locale) {
         if (locale == null) {
-            throw new NullPointerException();
+            throw new NullPointerException("locale == null");
         }
         defaultLocale = locale;
     }
