@@ -106,9 +106,6 @@ public final class VMRuntime {
         }
     }
 
-    /**
-     * @hide
-     */
     public float setTargetHeapMinFree(int size) {
         /* Synchronize to make sure that only one thread gets
          * a given "old" value if both update at the same time.
@@ -118,9 +115,7 @@ public final class VMRuntime {
             return nativeSetTargetHeapMinFree(size);
         }
     }
-    /**
-     * @hide
-     */
+
     public float setTargetHeapConcurrentStart(int size) {
         /* Synchronize to make sure that only one thread gets
          * a given "old" value if both update at the same time.
