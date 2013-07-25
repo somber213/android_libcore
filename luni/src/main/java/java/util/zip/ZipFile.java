@@ -95,7 +95,7 @@ public class ZipFile implements ZipConstants {
 
     private final String filename;
 
-    private File mFileToDeleteOnClose;
+    private File fileToDeleteOnClose;
 
     private RandomAccessFile raf;
 
@@ -140,7 +140,7 @@ public class ZipFile implements ZipConstants {
             fileToDeleteOnClose = file;
             fileToDeleteOnClose.deleteOnExit();
         } else {
-            mFileToDeleteOnClose = null;
+            fileToDeleteOnClose = null;
         }
 
         raf = new RandomAccessFile(filename, "r");
@@ -179,9 +179,9 @@ public class ZipFile implements ZipConstants {
                 raf = null;
                 localRaf.close();
             }
-            if (mFileToDeleteOnClose != null) {
-                mFileToDeleteOnClose.delete();
-                mFileToDeleteOnClose = null;
+            if (fileToDeleteOnClose != null) {
+                fileToDeleteOnClose.delete();
+                fileToDeleteOnClose = null;
             }
         }
     }
