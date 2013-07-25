@@ -64,6 +64,7 @@ public class ForwardingOs implements Os {
     public int getgid() { return os.getgid(); }
     public String getenv(String name) { return os.getenv(name); }
     public String getnameinfo(InetAddress address, int flags) throws GaiException { return os.getnameinfo(address, flags); }
+    public SocketAddress getpeername(FileDescriptor fd) throws ErrnoException { return os.getpeername(fd); }
     public int getpid() { return os.getpid(); }
     public int getppid() { return os.getppid(); }
     public StructPasswd getpwnam(String name) throws ErrnoException { return os.getpwnam(name); }
@@ -74,6 +75,7 @@ public class ForwardingOs implements Os {
     public int getsockoptInt(FileDescriptor fd, int level, int option) throws ErrnoException { return os.getsockoptInt(fd, level, option); }
     public StructLinger getsockoptLinger(FileDescriptor fd, int level, int option) throws ErrnoException { return os.getsockoptLinger(fd, level, option); }
     public StructTimeval getsockoptTimeval(FileDescriptor fd, int level, int option) throws ErrnoException { return os.getsockoptTimeval(fd, level, option); }
+    public StructUcred getsockoptUcred(FileDescriptor fd, int level, int option) throws ErrnoException { return os.getsockoptUcred(fd, level, option); }
     public int getuid() { return os.getuid(); }
     public String if_indextoname(int index) { return os.if_indextoname(index); }
     public InetAddress inet_pton(int family, String address) { return os.inet_pton(family, address); }
@@ -110,6 +112,7 @@ public class ForwardingOs implements Os {
     public int sendto(FileDescriptor fd, ByteBuffer buffer, int flags, InetAddress inetAddress, int port) throws ErrnoException, SocketException { return os.sendto(fd, buffer, flags, inetAddress, port); }
     public int sendto(FileDescriptor fd, byte[] bytes, int byteOffset, int byteCount, int flags, InetAddress inetAddress, int port) throws ErrnoException, SocketException { return os.sendto(fd, bytes, byteOffset, byteCount, flags, inetAddress, port); }
     public void setegid(int egid) throws ErrnoException { os.setegid(egid); }
+    public void setenv(String name, String value, boolean overwrite) throws ErrnoException { os.setenv(name, value, overwrite); }
     public void seteuid(int euid) throws ErrnoException { os.seteuid(euid); }
     public void setgid(int gid) throws ErrnoException { os.setgid(gid); }
     public int setsid() throws ErrnoException { return os.setsid(); }
@@ -127,11 +130,14 @@ public class ForwardingOs implements Os {
     public StructStat stat(String path) throws ErrnoException { return os.stat(path); }
     public StructStatFs statfs(String path) throws ErrnoException { return os.statfs(path); }
     public String strerror(int errno) { return os.strerror(errno); }
+    public String strsignal(int signal) { return os.strsignal(signal); }
     public void symlink(String oldPath, String newPath) throws ErrnoException { os.symlink(oldPath, newPath); }
     public long sysconf(int name) { return os.sysconf(name); }
     public void tcdrain(FileDescriptor fd) throws ErrnoException { os.tcdrain(fd); }
+    public void tcsendbreak(FileDescriptor fd, int duration) throws ErrnoException { os.tcsendbreak(fd, duration); }
     public int umask(int mask) { return os.umask(mask); }
     public StructUtsname uname() { return os.uname(); }
+    public void unsetenv(String name) throws ErrnoException { os.unsetenv(name); }
     public int waitpid(int pid, MutableInt status, int options) throws ErrnoException { return os.waitpid(pid, status, options); }
     public int write(FileDescriptor fd, ByteBuffer buffer) throws ErrnoException { return os.write(fd, buffer); }
     public int write(FileDescriptor fd, byte[] bytes, int byteOffset, int byteCount) throws ErrnoException { return os.write(fd, bytes, byteOffset, byteCount); }

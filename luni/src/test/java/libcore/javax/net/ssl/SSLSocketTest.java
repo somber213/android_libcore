@@ -19,7 +19,9 @@ package libcore.javax.net.ssl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -50,6 +52,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509TrustManager;
 import junit.framework.TestCase;
 import libcore.java.security.StandardNames;
 import libcore.java.security.TestKeyStore;
@@ -71,41 +74,51 @@ public class SSLSocketTest extends TestCase {
                 .aliasPrefix("rsa-dsa-ec")
                 .ca(true)
                 .build();
+        StringBuilder error = new StringBuilder();
         if (StandardNames.IS_RI) {
             test_SSLSocket_getSupportedCipherSuites_connect(testKeyStore,
                                                             StandardNames.JSSE_PROVIDER_NAME,
                                                             StandardNames.JSSE_PROVIDER_NAME,
                                                             true,
-                                                            true);
+                                                            true,
+                                                            error);
         } else  {
             test_SSLSocket_getSupportedCipherSuites_connect(testKeyStore,
                                                             "HarmonyJSSE",
                                                             "HarmonyJSSE",
                                                             false,
-                                                            false);
+                                                            false,
+                                                            error);
             test_SSLSocket_getSupportedCipherSuites_connect(testKeyStore,
                                                             "AndroidOpenSSL",
                                                             "AndroidOpenSSL",
                                                             true,
-                                                            true);
+                                                            true,
+                                                            error);
             test_SSLSocket_getSupportedCipherSuites_connect(testKeyStore,
                                                             "HarmonyJSSE",
                                                             "AndroidOpenSSL",
                                                             false,
-                                                            true);
+                                                            true,
+                                                            error);
             test_SSLSocket_getSupportedCipherSuites_connect(testKeyStore,
                                                             "AndroidOpenSSL",
                                                             "HarmonyJSSE",
                                                             true,
-                                                            false);
+                                                            false,
+                                                            error);
         }
-
+        if (error.length() > 0) {
+            throw new Exception("One or more problems in "
+                    + "test_SSLSocket_getSupportedCipherSuites_connect:\n" + error);
+        }
     }
     private void test_SSLSocket_getSupportedCipherSuites_connect(TestKeyStore testKeyStore,
                                                                  String clientProvider,
                                                                  String serverProvider,
                                                                  boolean clientSecureRenegotiation,
-                                                                 boolean serverSecureRenegotiation)
+                                                                 boolean serverSecureRenegotiation,
+                                                                 StringBuilder error)
             throws Exception {
 
         String clientToServerString = "this is sent from the client to the server...";
@@ -180,10 +193,13 @@ public class SSLSocketTest extends TestCase {
                 assertFalse(errorExpected);
             } catch (Exception maybeExpected) {
                 if (!errorExpected) {
-                    throw new Exception("Problem trying to connect cipher suite " + cipherSuite
-                                        + " client=" + clientProvider
-                                        + " server=" + serverProvider,
-                                        maybeExpected);
+                    String message = ("Problem trying to connect cipher suite " + cipherSuite
+                                      + " client=" + clientProvider
+                                      + " server=" + serverProvider);
+                    System.out.println(message);
+                    maybeExpected.printStackTrace();
+                    error.append(message);
+                    error.append('\n');
                 }
             }
         }
@@ -311,6 +327,55 @@ public class SSLSocketTest extends TestCase {
         future.get();
         client.close();
         server.close();
+        c.close();
+    }
+
+    private static final class SSLServerSessionIdCallable implements Callable<byte[]> {
+        private final SSLSocket server;
+        private SSLServerSessionIdCallable(SSLSocket server) {
+            this.server = server;
+        }
+        @Override public byte[] call() throws Exception {
+            server.startHandshake();
+            assertNotNull(server.getSession());
+            assertNotNull(server.getSession().getId());
+            return server.getSession().getId();
+        }
+    }
+
+    public void test_SSLSocket_confirmSessionReuse() throws Exception {
+        final TestSSLContext c = TestSSLContext.create();
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        final SSLSocket client1 = (SSLSocket) c.clientContext.getSocketFactory().createSocket(c.host,
+                                                                                       c.port);
+        final SSLSocket server1 = (SSLSocket) c.serverSocket.accept();
+        final Future<byte[]> future1 = executor.submit(new SSLServerSessionIdCallable(server1));
+        client1.startHandshake();
+        assertNotNull(client1.getSession());
+        assertNotNull(client1.getSession().getId());
+        final byte[] clientSessionId1 = client1.getSession().getId();
+        final byte[] serverSessionId1 = future1.get();
+        assertTrue(Arrays.equals(clientSessionId1, serverSessionId1));
+        client1.close();
+        server1.close();
+
+        final SSLSocket client2 = (SSLSocket) c.clientContext.getSocketFactory().createSocket(c.host,
+                                                                                       c.port);
+        final SSLSocket server2 = (SSLSocket) c.serverSocket.accept();
+        final Future<byte[]> future2 = executor.submit(new SSLServerSessionIdCallable(server2));
+        client2.startHandshake();
+        assertNotNull(client2.getSession());
+        assertNotNull(client2.getSession().getId());
+        final byte[] clientSessionId2 = client2.getSession().getId();
+        final byte[] serverSessionId2 = future2.get();
+        assertTrue(Arrays.equals(clientSessionId2, serverSessionId2));
+        client2.close();
+        server2.close();
+
+        assertTrue(Arrays.equals(clientSessionId1, clientSessionId2));
+
+        executor.shutdown();
         c.close();
     }
 
@@ -479,7 +544,22 @@ public class SSLSocketTest extends TestCase {
         c.close();
     }
 
+    private static final class TestUncaughtExceptionHandler implements UncaughtExceptionHandler {
+        Throwable actualException;
+        @Override public void uncaughtException(Thread thread, Throwable ex) {
+            assertNull(actualException);
+            actualException = ex;
+        }
+    }
+
     public void test_SSLSocket_HandshakeCompletedListener_RuntimeException() throws Exception {
+        final Thread self = Thread.currentThread();
+        final UncaughtExceptionHandler original = self.getUncaughtExceptionHandler();
+
+        final RuntimeException expectedException = new RuntimeException("expected");
+        final TestUncaughtExceptionHandler test = new TestUncaughtExceptionHandler();
+        self.setUncaughtExceptionHandler(test);
+
         final TestSSLContext c = TestSSLContext.create();
         final SSLSocket client = (SSLSocket)
                 c.clientContext.getSocketFactory().createSocket(c.host, c.port);
@@ -494,7 +574,7 @@ public class SSLSocketTest extends TestCase {
         executor.shutdown();
         client.addHandshakeCompletedListener(new HandshakeCompletedListener() {
             public void handshakeCompleted(HandshakeCompletedEvent event) {
-                throw new RuntimeException("RuntimeException from handshakeCompleted");
+                throw expectedException;
             }
         });
         client.startHandshake();
@@ -502,6 +582,9 @@ public class SSLSocketTest extends TestCase {
         client.close();
         server.close();
         c.close();
+
+        assertSame(expectedException, test.actualException);
+        self.setUncaughtExceptionHandler(original);
     }
 
     public void test_SSLSocket_getUseClientMode() throws Exception {
@@ -723,6 +806,47 @@ public class SSLSocketTest extends TestCase {
         } catch (SSLHandshakeException expected) {
             // before we would get a NullPointerException from passing
             // due to the null PrivateKey return by the X509KeyManager.
+        }
+        future.get();
+        client.close();
+        server.close();
+        c.close();
+    }
+
+    public void test_SSLSocket_TrustManagerRuntimeException() throws Exception {
+        TestSSLContext c = TestSSLContext.create();
+        SSLContext clientContext = SSLContext.getInstance("TLS");
+        X509TrustManager trustManager = new X509TrustManager() {
+            @Override public void checkClientTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+                throw new AssertionError();
+            }
+            @Override public void checkServerTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+                throw new RuntimeException();  // throw a RuntimeException from custom TrustManager
+            }
+            @Override public X509Certificate[] getAcceptedIssuers() {
+                throw new AssertionError();
+            }
+        };
+        clientContext.init(null, new TrustManager[] { trustManager }, null);
+        SSLSocket client = (SSLSocket) clientContext.getSocketFactory().createSocket(c.host,
+                                                                                     c.port);
+        final SSLSocket server = (SSLSocket) c.serverSocket.accept();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Void> future = executor.submit(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                server.startHandshake();
+                return null;
+            }
+        });
+
+        executor.shutdown();
+        try {
+            client.startHandshake();
+            fail();
+        } catch (SSLHandshakeException expected) {
+            // before we would get a RuntimeException from checkServerTrusted.
         }
         future.get();
         client.close();
@@ -1058,8 +1182,27 @@ public class SSLSocketTest extends TestCase {
         }
 
         final TestSSLContext c = TestSSLContext.create();
-        SSLSocket client = (SSLSocket) c.clientContext.getSocketFactory().createSocket(c.host,
-                                                                                       c.port);
+        SSLSocket client = (SSLSocket) c.clientContext.getSocketFactory().createSocket();
+
+        // Try to make the client SO_SNDBUF size as small as possible
+        // (it can default to 512k or even megabytes).  Note that
+        // socket(7) says that the kernel will double the request to
+        // leave room for its own book keeping and that the minimal
+        // value will be 2048. Also note that tcp(7) says the value
+        // needs to be set before connect(2).
+        int sendBufferSize = 1024;
+        client.setSendBufferSize(sendBufferSize);
+        sendBufferSize = client.getSendBufferSize();
+
+        // In jb-mr2 it was found that we need to also set SO_RCVBUF
+        // to a minimal size or the write would not block. While
+        // tcp(2) says the value has to be set before listen(2), it
+        // seems fine to set it before accept(2).
+        final int recvBufferSize = 128;
+        c.serverSocket.setReceiveBufferSize(recvBufferSize);
+
+        client.connect(new InetSocketAddress(c.host, c.port));
+
         final SSLSocket server = (SSLSocket) c.serverSocket.accept();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<Void> future = executor.submit(new Callable<Void>() {
@@ -1079,14 +1222,12 @@ public class SSLSocketTest extends TestCase {
                                                          new Class[] { Integer.TYPE });
         setSoWriteTimeout.invoke(client, 1);
 
-        // Try to make the size smaller (it can be 512k or even megabytes).
-        // Note that it may not respect your request, so read back the actual value.
-        int sendBufferSize = 1024;
-        client.setSendBufferSize(sendBufferSize);
-        sendBufferSize = client.getSendBufferSize();
 
         try {
-            client.getOutputStream().write(new byte[sendBufferSize + 1]);
+            // Add extra space to the write to exceed the send buffer
+            // size and cause the write to block.
+            final int extra = 1;
+            client.getOutputStream().write(new byte[sendBufferSize + extra]);
             fail();
         } catch (SocketTimeoutException expected) {
         }

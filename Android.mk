@@ -36,15 +36,18 @@ include $(LOCAL_PATH)/NativeCode.mk
 include $(LOCAL_PATH)/CaCerts.mk
 
 #
-# Disable test modules if LIBCORE_SKIP_TESTS envar is set
+# Include the definitions to build the caliper benchmarks.
+#
+include $(LOCAL_PATH)/benchmarks/Android.mk
+
+#
+# Disable test modules if LIBCORE_SKIP_TESTS environment variable is set.
 #
 
 ifneq ($(LIBCORE_SKIP_TESTS),)
 $(info ********************************************************************************)
 $(info * libcore tests are skipped because environment variable LIBCORE_SKIP_TESTS=$(LIBCORE_SKIP_TESTS))
 $(info ********************************************************************************)
-ALL_MODULE_TAGS := $(filter-out tests,$(ALL_MODULE_TAGS))
-ALL_MODULES := $(filter-out $(ALL_MODULE_NAME_TAGS.tests),$(ALL_MODULES))
 endif
 
 
@@ -60,9 +63,6 @@ ifeq ($(WITH_HOST_DALVIK),true)
         $(HOST_OUT)/bin/dexopt \
         $(HOST_OUT)/lib/libjavacore.so \
         cacerts-host \
-        $(HOST_OUT)/usr/share/zoneinfo/zoneinfo.dat \
-        $(HOST_OUT)/usr/share/zoneinfo/zoneinfo.idx \
-        $(HOST_OUT)/usr/share/zoneinfo/zoneinfo.version \
         core-hostdex \
         bouncycastle-hostdex \
         apache-xml-hostdex \

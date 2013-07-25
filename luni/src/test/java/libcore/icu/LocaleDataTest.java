@@ -23,7 +23,7 @@ public class LocaleDataTest extends junit.framework.TestCase {
         // Test that we can get the locale data for all known locales.
         for (Locale l : Locale.getAvailableLocales()) {
             LocaleData d = LocaleData.get(l);
-            System.err.println(l + " : " + d.yesterday + " " + d.today + " " + d.tomorrow);
+            // System.err.format("%10s %10s %10s\n", l, d.timeFormat12, d.timeFormat24);
         }
     }
 
@@ -65,11 +65,11 @@ public class LocaleDataTest extends junit.framework.TestCase {
         LocaleData l = LocaleData.get(new Locale("cs", "CZ"));
 
         assertEquals("ledna", l.longMonthNames[0]);
-        assertEquals("Led", l.shortMonthNames[0]);
+        assertEquals("led", l.shortMonthNames[0]);
         assertEquals("1", l.tinyMonthNames[0]);
 
         assertEquals("leden", l.longStandAloneMonthNames[0]);
-        assertEquals("1.", l.shortStandAloneMonthNames[0]);
+        assertEquals("led", l.shortStandAloneMonthNames[0]);
         assertEquals("l", l.tinyStandAloneMonthNames[0]);
     }
 
@@ -78,11 +78,45 @@ public class LocaleDataTest extends junit.framework.TestCase {
 
         assertEquals("воскресенье", l.longWeekdayNames[1]);
         assertEquals("вс", l.shortWeekdayNames[1]);
-        assertEquals("В", l.tinyWeekdayNames[1]);
+        assertEquals("вс", l.tinyWeekdayNames[1]);
 
         // Russian stand-alone weekday names get an initial capital.
         assertEquals("Воскресенье", l.longStandAloneWeekdayNames[1]);
         assertEquals("Вс", l.shortStandAloneWeekdayNames[1]);
         assertEquals("В", l.tinyStandAloneWeekdayNames[1]);
+    }
+
+    // http://code.google.com/p/android/issues/detail?id=38844
+    public void testDecimalFormatSymbols_es() throws Exception {
+        LocaleData es = LocaleData.get(new Locale("es"));
+        assertEquals(',', es.decimalSeparator);
+        assertEquals('.', es.groupingSeparator);
+
+        LocaleData es_419 = LocaleData.get(new Locale("es", "419"));
+        assertEquals('.', es_419.decimalSeparator);
+        assertEquals(',', es_419.groupingSeparator);
+
+        LocaleData es_US = LocaleData.get(new Locale("es", "US"));
+        assertEquals('.', es_US.decimalSeparator);
+        assertEquals(',', es_US.groupingSeparator);
+
+        LocaleData es_MX = LocaleData.get(new Locale("es", "MX"));
+        assertEquals('.', es_MX.decimalSeparator);
+        assertEquals(',', es_MX.groupingSeparator);
+
+        LocaleData es_AR = LocaleData.get(new Locale("es", "AR"));
+        assertEquals(',', es_AR.decimalSeparator);
+        assertEquals('.', es_AR.groupingSeparator);
+    }
+
+    // http://b/7924970
+    public void testTimeFormat12And24() throws Exception {
+        LocaleData en_US = LocaleData.get(Locale.US);
+        assertEquals("h:mm a", en_US.timeFormat12);
+        assertEquals("HH:mm", en_US.timeFormat24);
+
+        LocaleData ja_JP = LocaleData.get(Locale.JAPAN);
+        assertEquals("aK:mm", ja_JP.timeFormat12);
+        assertEquals("H:mm", ja_JP.timeFormat24);
     }
 }

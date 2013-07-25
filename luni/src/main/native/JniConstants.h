@@ -45,6 +45,7 @@ struct JniConstants {
     static jclass booleanClass;
     static jclass byteArrayClass;
     static jclass byteClass;
+    static jclass calendarClass;
     static jclass charsetICUClass;
     static jclass constructorClass;
     static jclass deflaterClass;
@@ -57,19 +58,23 @@ struct JniConstants {
     static jclass inet6AddressClass;
     static jclass inetAddressClass;
     static jclass inetSocketAddressClass;
+    static jclass inetUnixAddressClass;
     static jclass inflaterClass;
+    static jclass inputStreamClass;
     static jclass integerClass;
     static jclass localeDataClass;
     static jclass longClass;
     static jclass methodClass;
     static jclass mutableIntClass;
     static jclass mutableLongClass;
+    static jclass objectClass;
+    static jclass objectArrayClass;
+    static jclass outputStreamClass;
     static jclass parsePositionClass;
     static jclass patternSyntaxExceptionClass;
     static jclass realToStringClass;
     static jclass socketClass;
     static jclass socketImplClass;
-    static jclass stringArrayClass;
     static jclass stringClass;
     static jclass structAddrinfoClass;
     static jclass structFlockClass;
@@ -80,6 +85,7 @@ struct JniConstants {
     static jclass structStatClass;
     static jclass structStatFsClass;
     static jclass structTimevalClass;
+    static jclass structUcredClass;
     static jclass structUtsnameClass;
 };
 

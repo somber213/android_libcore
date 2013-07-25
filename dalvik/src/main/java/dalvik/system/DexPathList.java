@@ -21,10 +21,16 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
+import libcore.io.ErrnoException;
+import libcore.io.IoUtils;
+import libcore.io.Libcore;
+import libcore.io.StructStat;
+import static libcore.io.OsConstants.*;
 
 /**
  * A pair of lists of entries, associated with a {@code ClassLoader}.
@@ -48,10 +54,14 @@ import java.util.zip.ZipFile;
     /** class definition context */
     private final ClassLoader definingContext;
 
-    /** list of dex/resource (class path) elements */
+    /**
+     * List of dex/resource (class path) elements.
+     * Should be called pathElements, but the Facebook app uses reflection
+     * to modify 'dexElements' (http://b/7726934).
+     */
     private final Element[] dexElements;
 
-    /** list of native library directory elements */
+    /** List of native library directories. */
     private final File[] nativeLibraryDirectories;
 
     /**
@@ -93,9 +103,20 @@ import java.util.zip.ZipFile;
         }
 
         this.definingContext = definingContext;
-        this.dexElements =
-            makeDexElements(splitDexPath(dexPath), optimizedDirectory);
+        this.dexElements = makeDexElements(splitDexPath(dexPath), optimizedDirectory);
         this.nativeLibraryDirectories = splitLibraryPath(libraryPath);
+    }
+
+    @Override public String toString() {
+        return "DexPathList[" + Arrays.toString(dexElements) +
+            ",nativeLibraryDirectories=" + Arrays.toString(nativeLibraryDirectories) + "]";
+    }
+
+    /**
+     * For BaseDexClassLoader.getLdLibraryPath.
+     */
+    public File[] getNativeLibraryDirectories() {
+        return nativeLibraryDirectories;
     }
 
     /**
@@ -154,36 +175,19 @@ import java.util.zip.ZipFile;
      * Helper for {@link #splitPaths}, which does the actual splitting
      * and filtering and adding to a result.
      */
-    private static void splitAndAdd(String path, boolean wantDirectories,
+    private static void splitAndAdd(String searchPath, boolean directoriesOnly,
             ArrayList<File> resultList) {
-        if (path == null) {
+        if (searchPath == null) {
             return;
         }
-
-        String[] strings = path.split(Pattern.quote(File.pathSeparator));
-
-        for (String s : strings) {
-            File file = new File(s);
-
-            if (! (file.exists() && file.canRead())) {
-                continue;
-            }
-
-            /*
-             * Note: There are other entities in filesystems than
-             * regular files and directories.
-             */
-            if (wantDirectories) {
-                if (!file.isDirectory()) {
-                    continue;
+        for (String path : searchPath.split(":")) {
+            try {
+                StructStat sb = Libcore.os.stat(path);
+                if (!directoriesOnly || S_ISDIR(sb.st_mode)) {
+                    resultList.add(new File(path));
                 }
-            } else {
-                if (!file.isFile()) {
-                    continue;
-                }
+            } catch (ErrnoException ignored) {
             }
-
-            resultList.add(file);
         }
     }
 
@@ -226,12 +230,16 @@ import java.util.zip.ZipFile;
                      * the exception here, and let dex == null.
                      */
                 }
+            } else if (file.isDirectory()) {
+                // We support directories for looking up resources.
+                // This is only useful for running libcore tests.
+                elements.add(new Element(file, true, null, null));
             } else {
                 System.logW("Unknown file type for: " + file);
             }
 
             if ((zip != null) || (dex != null)) {
-                elements.add(new Element(file, zip, dex));
+                elements.add(new Element(file, false, zip, dex));
             }
         }
 
@@ -360,14 +368,12 @@ import java.util.zip.ZipFile;
      */
     public String findLibrary(String libraryName) {
         String fileName = System.mapLibraryName(libraryName);
-
         for (File directory : nativeLibraryDirectories) {
-            File file = new File(directory, fileName);
-            if (file.exists() && file.isFile() && file.canRead()) {
-                return file.getPath();
+            String path = new File(directory, fileName).getPath();
+            if (IoUtils.canOpenReadOnly(path)) {
+                return path;
             }
         }
-
         return null;
     }
 
@@ -376,31 +382,38 @@ import java.util.zip.ZipFile;
      */
     /*package*/ static class Element {
         private final File file;
+        private final boolean isDirectory;
         private final File zip;
         private final DexFile dexFile;
 
         private ZipFile zipFile;
-        private boolean init;
+        private boolean initialized;
 
-        public Element(File file, File zip, DexFile dexFile) {
+        public Element(File file, boolean isDirectory, File zip, DexFile dexFile) {
             this.file = file;
+            this.isDirectory = isDirectory;
             this.zip = zip;
             this.dexFile = dexFile;
         }
 
+        @Override public String toString() {
+            if (isDirectory) {
+                return "directory \"" + file + "\"";
+            } else if (zip != null) {
+                return "zip file \"" + zip + "\"";
+            } else {
+                return "dex file \"" + dexFile + "\"";
+            }
+        }
+
         public synchronized void maybeInit() {
-            if (init) {
+            if (initialized) {
                 return;
             }
 
-            init = true;
+            initialized = true;
 
-            if (zip == null) {
-                /*
-                 * Either this element has no zip/jar file (first
-                 * clause), or the zip/jar file doesn't have an entry
-                 * for the given name (second clause).
-                 */
+            if (isDirectory || zip == null) {
                 return;
             }
 
@@ -421,7 +434,25 @@ import java.util.zip.ZipFile;
         public URL findResource(String name) {
             maybeInit();
 
+            // We support directories so we can run tests and/or legacy code
+            // that uses Class.getResource.
+            if (isDirectory) {
+                File resourceFile = new File(file, name);
+                if (resourceFile.exists()) {
+                    try {
+                        return resourceFile.toURI().toURL();
+                    } catch (MalformedURLException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            }
+
             if (zipFile == null || zipFile.getEntry(name) == null) {
+                /*
+                 * Either this element has no zip/jar file (first
+                 * clause), or the zip/jar file doesn't have an entry
+                 * for the given name (second clause).
+                 */
                 return null;
             }
 

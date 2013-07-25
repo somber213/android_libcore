@@ -83,6 +83,7 @@ LOCAL_DX_FLAGS := --core-library
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := core
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/JavaLibrary.mk
+LOCAL_REQUIRED_MODULES := tzdata
 
 include $(BUILD_JAVA_LIBRARY)
 
@@ -90,17 +91,18 @@ core-intermediates := ${intermediates}
 
 
 # Make the core-tests library.
+ifeq ($(LIBCORE_SKIP_TESTS),)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := $(call all-test-java-files-under,dalvik dom json luni support xml)
 LOCAL_JAVA_RESOURCE_DIRS := $(test_resource_dirs)
 LOCAL_NO_STANDARD_LIBRARIES := true
 LOCAL_JAVA_LIBRARIES := bouncycastle core core-junit
-LOCAL_STATIC_JAVA_LIBRARIES := sqlite-jdbc mockwebserver
+LOCAL_STATIC_JAVA_LIBRARIES := sqlite-jdbc mockwebserver nist-pkix-tests
 LOCAL_JAVACFLAGS := $(local_javac_flags)
-LOCAL_MODULE_TAGS := tests
 LOCAL_MODULE := core-tests
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/JavaLibrary.mk
 include $(BUILD_STATIC_JAVA_LIBRARY)
+endif
 
 # This one's tricky. One of our tests needs to have a
 # resource with a "#" in its name, but Perforce doesn't
@@ -139,22 +141,25 @@ ifeq ($(WITH_HOST_DALVIK),true)
     LOCAL_MODULE_TAGS := optional
     LOCAL_MODULE := core-hostdex
     LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/JavaLibrary.mk
+    LOCAL_REQUIRED_MODULES := tzdata-host
 
     include $(BUILD_HOST_JAVA_LIBRARY)
 
     # Make the core-tests library.
+    ifeq ($(LIBCORE_SKIP_TESTS),)
     include $(CLEAR_VARS)
     LOCAL_SRC_FILES := $(call all-test-java-files-under,dalvik dom json luni support xml)
     LOCAL_JAVA_RESOURCE_DIRS := $(test_resource_dirs)
     LOCAL_NO_STANDARD_LIBRARIES := true
     LOCAL_JAVA_LIBRARIES := bouncycastle-hostdex core-hostdex core-junit-hostdex
-    LOCAL_STATIC_JAVA_LIBRARIES := sqlite-jdbc-host mockwebserver-hostdex
+    LOCAL_STATIC_JAVA_LIBRARIES := sqlite-jdbc-host mockwebserver-host nist-pkix-tests-host
     LOCAL_JAVACFLAGS := $(local_javac_flags)
     LOCAL_MODULE_TAGS := optional
     LOCAL_MODULE := core-tests-hostdex
     LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/JavaLibrary.mk
     LOCAL_BUILD_HOST_DEX := true
     include $(BUILD_HOST_JAVA_LIBRARY)
+    endif
 endif
 
 #
@@ -162,19 +167,19 @@ endif
 #
 #
 # Run with:
-#     m libcore-docs
+#     mm -j32 libcore-docs
 #
 # Main output:
-#     out/target/common/docs/libcore/reference/packages.html
+#     ../out/target/common/docs/libcore/reference/packages.html
 #
 # All text for proofreading (or running tools over):
-#     out/target/common/docs/libcore-proofread.txt
+#     ../out/target/common/docs/libcore-proofread.txt
 #
 # TODO list of missing javadoc, etc:
-#     out/target/common/docs/libcore-docs-todo.html
+#     ../out/target/common/docs/libcore-docs-todo.html
 #
 # Rerun:
-#     rm -rf out/target/common/docs/libcore-timestamp && m libcore-docs
+#     rm -rf ../out/target/common/docs/libcore-timestamp && mm -j32 libcore-docs
 #
 include $(CLEAR_VARS)
 
@@ -190,7 +195,7 @@ LOCAL_MODULE_CLASS:=JAVA_LIBRARIES
 LOCAL_MODULE := libcore
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/JavaLibrary.mk
 
-LOCAL_DROIDDOC_OPTIONS:= \
+LOCAL_DROIDDOC_OPTIONS := \
  -offlinemode \
  -title "libcore" \
  -proofread $(OUT_DOCS)/$(LOCAL_MODULE)-proofread.txt \

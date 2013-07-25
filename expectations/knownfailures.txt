@@ -26,14 +26,6 @@
   bug: 4723412
 },
 {
-  description: "Encoded bytes don't match for EC elliptic curve keys created through KeyFactory.generatePrivate()",
-  names: [
-    "org.apache.harmony.security.tests.java.security.KeyFactory2Test#test_generatePrivateLjava_security_spec_KeySpec",
-    "org.apache.harmony.security.tests.java.security.KeyFactory2Test#test_getKeySpecLjava_security_KeyLjava_lang_Class"
-  ],
-  bug: 3483365
-},
-{
   description: "Expat uses an unbounded number of global references",
   name: "libcore.xml.ExpatSaxParserTest#testGlobalReferenceTableOverflow",
   bug: 2772628
@@ -58,21 +50,8 @@
   bug: 3387655
 },
 {
-  name: "org.apache.harmony.crypto.tests.javax.crypto.CipherTest#testGetMaxAllowedKeyLength",
-  bug: 3387688
-},
-{
   name: "libcore.java.io.FileTest#test_emptyFilename",
   bug: 3387758
-},
-{
-  description: "Turkish dotless i behaves differently on dalvik vs. RI",
-  names: [
-    "libcore.java.lang.StringTest#testChangeCase_en_US",
-    "libcore.java.lang.StringTest#testEqualsIgnoreCase_en_US",
-    "libcore.java.lang.StringTest#testEqualsIgnoreCase_tr_TR"
-  ],
-  bug: 3325799
 },
 {
   description: "KxmlPullParser doesn't enforce top-level document element",
@@ -332,11 +311,6 @@
   description: "Android doesn't allow null parent.",
   result: EXEC_FAILED,
   name: "tests.java.security.SecureClassLoaderTest#testSecureClassLoaderClassLoader"
-},
-{
-  description: "Assertion does not evaluate to true... Works in javax.Certificate",
-  result: EXEC_FAILED,
-  name: "tests.security.cert.CertificateTest#testGetEncoded"
 },
 {
   description: "Not all Drivers are loaded in testsetup. ClassLoader issue in DriverManager.",
@@ -1679,6 +1653,43 @@
     "libcore.xml.JaxenXPathTestSuite$4#xml/web.xml /web-app/servlet[1] upper-case( servlet-class, 'es-ES-Traditional_WIN' )",
     "libcore.xml.JaxenXPathTestSuite$4#xml/web.xml /web-app/servlet[1] upper-case( servlet-class, 'fr' )",
     "libcore.xml.JaxenXPathTestSuite$4#xml/web.xml /web-app/servlet[1] upper-case( servlet-class, 'fr-CA' )"
+  ]
+},
+{
+  description: "Android's PKIX validation fails on many NIST PKIX tests",
+  bug: 8030138,
+  names: [
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidLongSerialNumberTest18",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidNegativeSerialNumberTest15",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidRevokedCATest2",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidRevokedEETest3",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidSeparateCertificateandCRLKeysTest20",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidSeparateCertificateandCRLKeysTest21",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_InvalidUnknownCRLEntryExtensionTest8",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testBasicCertificateRevocationTests_ValidSeparateCertificateandCRLKeysTest19",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest3",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest4",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest6",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDeltaCRLs_InvaliddeltaCRLTest9",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidIDPwithindirectCRLTest23",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidcRLIssuerTest34",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvaliddistributionPointTest2",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvaliddistributionPointTest6",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest15",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest16",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest20",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_InvalidonlySomeReasonsTest21",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidIDPwithindirectCRLTest24",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidIDPwithindirectCRLTest25",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidcRLIssuerTest28",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidcRLIssuerTest29",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidcRLIssuerTest30",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testDistributionPoints_ValidcRLIssuerTest33",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testKeyUsage_ValidSelfIssuedDNnameConstraintsTest19",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingNameChaining_ValidRFC3280OptionalAttributeTypesTest8",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingPathswithSelfIssuedCertificates_InvalidBasicSelfIssuedOldWithNewTest2",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingPathswithSelfIssuedCertificates_ValidBasicSelfIssuedCRLSigningKeyTest6",
+    "libcore.java.security.cert.X509CertificateNistPkitsTest#testVerifyingPathswithSelfIssuedCertificates_ValidBasicSelfIssuedNewWithOldTest4"
   ]
 }
 ]

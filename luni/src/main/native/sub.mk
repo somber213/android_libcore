@@ -5,6 +5,7 @@
 
 LOCAL_SRC_FILES := \
 	AsynchronousSocketCloseMonitor.cpp \
+	IcuUtilities.cpp \
 	JniConstants.cpp \
 	JniException.cpp \
 	NetworkUtilities.cpp \
@@ -30,6 +31,7 @@ LOCAL_SRC_FILES := \
 	java_util_zip_CRC32.cpp \
 	java_util_zip_Deflater.cpp \
 	java_util_zip_Inflater.cpp \
+	libcore_icu_AlphabeticIndex.cpp \
 	libcore_icu_ICU.cpp \
 	libcore_icu_NativeBreakIterator.cpp \
 	libcore_icu_NativeCollation.cpp \
@@ -38,7 +40,8 @@ LOCAL_SRC_FILES := \
 	libcore_icu_NativeIDN.cpp \
 	libcore_icu_NativeNormalizer.cpp \
 	libcore_icu_NativePluralRules.cpp \
-	libcore_icu_TimeZones.cpp \
+	libcore_icu_TimeZoneNames.cpp \
+	libcore_icu_Transliterator.cpp \
 	libcore_io_AsynchronousCloseMonitor.cpp \
 	libcore_io_Memory.cpp \
 	libcore_io_OsConstants.cpp \

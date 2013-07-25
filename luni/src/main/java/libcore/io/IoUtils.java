@@ -19,6 +19,7 @@ package libcore.io;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.charset.Charsets;
@@ -134,7 +135,7 @@ public final class IoUtils {
     public static void deleteContents(File dir) throws IOException {
         File[] files = dir.listFiles();
         if (files == null) {
-            throw new IllegalArgumentException("not a directory: " + dir);
+            throw new IOException("listFiles returned null: " + dir);
         }
         for (File file : files) {
             if (file.isDirectory()) {
@@ -144,5 +145,30 @@ public final class IoUtils {
                 throw new IOException("failed to delete file: " + file);
             }
         }
+    }
+
+    /**
+     * Checks whether {@code path} can be opened read-only. Similar to File.exists, but doesn't
+     * require read permission on the parent, so it'll work in more cases, and allow you to
+     * remove read permission from more directories.
+     */
+    public static boolean canOpenReadOnly(String path) {
+        try {
+            // Use open(2) rather than stat(2) so we require fewer permissions. http://b/6485312.
+            FileDescriptor fd = Libcore.os.open(path, O_RDONLY, 0);
+            Libcore.os.close(fd);
+            return true;
+        } catch (ErrnoException errnoException) {
+            return false;
+        }
+    }
+
+    public static void throwInterruptedIoException() throws InterruptedIOException {
+        // This is typically thrown in response to an
+        // InterruptedException which does not leave the thread in an
+        // interrupted state, so explicitly interrupt here.
+        Thread.currentThread().interrupt();
+        // TODO: set InterruptedIOException.bytesTransferred
+        throw new InterruptedIOException();
     }
 }

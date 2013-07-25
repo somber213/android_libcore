@@ -27,20 +27,27 @@ import java.text.SimpleDateFormat;
 import libcore.icu.LocaleData;
 
 /**
- * {@code Date} represents a specific moment in time, to the millisecond.
+ * A specific moment in time, with millisecond precision. Values typically come
+ * from {@link System#currentTimeMillis}, and are always UTC, regardless of the
+ * system's time zone. This is often called "Unix time" or "epoch time".
  *
- * @see System#currentTimeMillis
- * @see Calendar
- * @see GregorianCalendar
- * @see SimpleTimeZone
- * @see TimeZone
+ * <p>Instances of this class are suitable for comparison, but little else.
+ * Use {@link java.text.DateFormat} to format a {@code Date} for display to a human.
+ * Use {@link Calendar} to break down a {@code Date} if you need to extract fields such
+ * as the current month or day of week, or to construct a {@code Date} from a broken-down
+ * time. That is: this class' deprecated display-related functionality is now provided
+ * by {@code DateFormat}, and this class' deprecated computational functionality is
+ * now provided by {@code Calendar}. Both of these other classes (and their subclasses)
+ * allow you to interpret a {@code Date} in a given time zone.
+ *
+ * <p>Note that, surprisingly, instances of this class are mutable.
  */
 public class Date implements Serializable, Cloneable, Comparable<Date> {
 
     private static final long serialVersionUID = 7523967970034938905L;
 
     // Used by parse()
-    private static int creationYear = new Date().getYear();
+    private static final int CREATION_YEAR = new Date().getYear();
 
     private transient long milliseconds;
 
@@ -535,7 +542,7 @@ public class Date implements Serializable, Cloneable, Comparable<Date> {
             if (second == -1) {
                 second = 0;
             }
-            if (year < (creationYear - 80)) {
+            if (year < (CREATION_YEAR - 80)) {
                 year += 2000;
             } else if (year < 100) {
                 year += 1900;

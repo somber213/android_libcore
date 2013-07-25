@@ -26,21 +26,19 @@ import java.util.HashSet;
 import libcore.util.EmptyArray;
 
 /**
- * This class provides an implementation of {@code FilterOutputStream} that
- * compresses data entries into a <i>ZIP-archive</i> output stream.
- *
+ * Used to write (compress) data into zip files. 
  * <p>{@code ZipOutputStream} is used to write {@link ZipEntry}s to the underlying
  * stream. Output from {@code ZipOutputStream} can be read using {@link ZipFile}
  * or {@link ZipInputStream}.
  *
- * <p>While {@code DeflaterOutputStream} can write a compressed <i>ZIP-archive</i>
- * entry, this extension can write uncompressed entries as well.
+ * <p>While {@code DeflaterOutputStream} can write compressed zip file
+ * entries, this extension can write uncompressed entries as well.
  * Use {@link ZipEntry#setMethod} or {@link #setMethod} with the {@link ZipEntry#STORED} flag.
  *
  * <h3>Example</h3>
  * <p>Using {@code ZipOutputStream} is a little more complicated than {@link GZIPOutputStream}
- * because ZIP archives are containers that can contain multiple files. This code creates a ZIP
- * archive containing several files, similar to the {@code zip(1)} utility.
+ * because zip files are containers that can contain multiple files. This code creates a zip
+ * file containing several files, similar to the {@code zip(1)} utility.
  * <pre>
  * OutputStream os = ...
  * ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(os));
@@ -346,7 +344,7 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
 
     /**
      * Sets the comment associated with the file being written.
-     * @throws IllegalArgumentException if the comment is longer than 64 KiB.
+     * @throws IllegalArgumentException if the comment is >= 64 Ki UTF-8 bytes.
      */
     public void setComment(String comment) {
         if (comment == null) {
@@ -362,13 +360,8 @@ public class ZipOutputStream extends DeflaterOutputStream implements ZipConstant
     }
 
     /**
-     * Sets the compression level to be used for writing entry data. This level
-     * may be set on a per entry basis. The level must have a value between -1
-     * and 8 according to the {@code Deflater} compression level bounds.
-     *
-     * @param level
-     *            the compression level (ranging from -1 to 8).
-     * @see Deflater
+     * Sets the <a href="Deflater.html#compression_level">compression level</a> to be used
+     * for writing entry data.
      */
     public void setLevel(int level) {
         if (level < Deflater.DEFAULT_COMPRESSION || level > Deflater.BEST_COMPRESSION) {

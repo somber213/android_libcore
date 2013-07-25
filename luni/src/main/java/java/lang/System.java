@@ -135,6 +135,11 @@ public final class System {
      * starting at offset {@code srcPos}, into the array {@code dst},
      * starting at offset {@code dstPos}.
      *
+     * <p>The source and destination arrays can be the same array,
+     * in which case copying is performed as if the source elements
+     * are first copied into a temporary array and then into the
+     * destination array.
+     *
      * @param src
      *            the source array to copy the content.
      * @param srcPos
@@ -149,22 +154,27 @@ public final class System {
     public static native void arraycopy(Object src, int srcPos, Object dst, int dstPos, int length);
 
     /**
-     * Returns the current system time in milliseconds since January 1, 1970
-     * 00:00:00 UTC. This method shouldn't be used for measuring timeouts or
-     * other elapsed time measurements, as changing the system time can affect
-     * the results.
+     * Returns the current time in milliseconds since January 1, 1970 00:00:00.0 UTC.
      *
-     * @return the local system time in milliseconds.
+     * <p>This method always returns UTC times, regardless of the system's time zone.
+     * This is often called "Unix time" or "epoch time".
+     * Use a {@link java.text.DateFormat} instance to format this time for display to a human.
+     *
+     * <p>This method shouldn't be used for measuring timeouts or
+     * other elapsed time measurements, as changing the system time can affect
+     * the results. Use {@link #nanoTime} for that.
      */
     public static native long currentTimeMillis();
 
     /**
      * Returns the current timestamp of the most precise timer available on the
-     * local system. This timestamp can only be used to measure an elapsed
-     * period by comparing it against another timestamp. It cannot be used as a
-     * very exact system time expression.
+     * local system, in nanoseconds. Equivalent to Linux's {@code CLOCK_MONOTONIC}.
      *
-     * @return the current timestamp in nanoseconds.
+     * <p>This timestamp should only be used to measure a duration by comparing it
+     * against another timestamp from the same process on the same device.
+     * Values returned by this method do not have a defined correspondence to
+     * wall clock times; the zero value is typically whenever the device last booted.
+     * Use {@link #currentTimeMillis} if you want to know what time it is.
      */
     public static native long nanoTime();
 
@@ -210,13 +220,6 @@ public final class System {
         String value = Libcore.os.getenv(name);
         return (value != null) ? value : defaultValue;
     }
-
-    /*
-     * Returns an environment variable. No security checks are performed.
-     * @param var the name of the environment variable
-     * @return the value of the specified environment variable
-     */
-    private static native String getEnvByName(String name);
 
     /**
      * Returns an unmodifiable map of all available environment variables.
@@ -321,6 +324,7 @@ public final class System {
         // Undocumented Android-only properties.
         p.put("android.icu.library.version", ICU.getIcuVersion());
         p.put("android.icu.unicode.version", ICU.getUnicodeVersion());
+        p.put("android.icu.cldr.version", ICU.getCldrVersion());
         // TODO: it would be nice to have this but currently it causes circularity.
         // p.put("android.tzdata.version", ZoneInfoDB.getVersion());
         parsePropertyAssignments(p, specialProperties());

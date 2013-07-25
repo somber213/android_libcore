@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.Locale;
 import junit.framework.TestCase;
@@ -228,6 +229,7 @@ public class StringTest extends TestCase {
         static String literal = "[5058, 9962, 1563, 5744]";
     }
 
+    private static final String COMBINING_DOT_ABOVE = "\u0307";
     private static final String LATIN_CAPITAL_I = "I";
     private static final String LATIN_CAPITAL_I_WITH_DOT_ABOVE = "\u0130";
     private static final String LATIN_SMALL_I = "i";
@@ -265,8 +267,9 @@ public class StringTest extends TestCase {
         assertEquals(LATIN_SMALL_DOTLESS_I, LATIN_SMALL_DOTLESS_I.toLowerCase(enUs));
 
         assertEquals(LATIN_CAPITAL_I, LATIN_SMALL_DOTLESS_I.toUpperCase(enUs));
-        // http://b/3325799: Android fails this with an extra combining "dot above".
-        assertEquals(LATIN_SMALL_I, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toLowerCase(enUs));
+        // http://b/3325799: the RI fails this because it's using an obsolete version of the Unicode rules.
+        // Android correctly preserves canonical equivalence. (See the separate test for tr_TR.)
+        assertEquals(LATIN_SMALL_I + COMBINING_DOT_ABOVE, LATIN_CAPITAL_I_WITH_DOT_ABOVE.toLowerCase(enUs));
     }
 
     public void testEqualsIgnoreCase_tr_TR() {
@@ -323,5 +326,19 @@ public class StringTest extends TestCase {
     // http://code.google.com/p/android/issues/detail?id=15266
     public void test_replaceAll() throws Exception {
         assertEquals("project_Id", "projectId".replaceAll("(?!^)(\\p{Upper})(?!$)", "_$1"));
+    }
+
+    // https://code.google.com/p/android/issues/detail?id=23831
+    public void test_23831() throws Exception {
+        byte[] bytes = { (byte) 0xf5, (byte) 0xa9, (byte) 0xea, (byte) 0x21 };
+        String expected = "\ufffd\ufffd\u0021";
+
+        // Since we use icu4c for CharsetDecoder...
+        CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+        decoder.onMalformedInput(CodingErrorAction.REPLACE);
+        assertEquals(expected, decoder.decode(ByteBuffer.wrap(bytes)).toString());
+
+        // Our fast-path code in String should behave the same...
+        assertEquals(expected, new String(bytes, "UTF-8"));
     }
 }

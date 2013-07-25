@@ -273,7 +273,7 @@ public final class IoBridge {
         case SocketOptions.SO_OOBINLINE:
             return booleanFromInt(Libcore.os.getsockoptInt(fd, SOL_SOCKET, SO_OOBINLINE));
         case SocketOptions.SO_RCVBUF:
-            return Libcore.os.getsockoptInt(fd, SOL_SOCKET, SO_SNDBUF);
+            return Libcore.os.getsockoptInt(fd, SOL_SOCKET, SO_RCVBUF);
         case SocketOptions.SO_REUSEADDR:
             return booleanFromInt(Libcore.os.getsockoptInt(fd, SOL_SOCKET, SO_REUSEADDR));
         case SocketOptions.SO_SNDBUF:
@@ -490,7 +490,7 @@ public final class IoBridge {
                 return 0;
             }
         } else {
-            if (errnoException.errno == EAGAIN || errnoException.errno == EWOULDBLOCK) {
+            if (errnoException.errno == EAGAIN) {
                 // We were asked to write to a non-blocking socket, but were told
                 // it would block, so report "no bytes written".
                 return 0;
@@ -539,7 +539,7 @@ public final class IoBridge {
 
     private static int maybeThrowAfterRecvfrom(boolean isRead, boolean isConnected, ErrnoException errnoException) throws SocketException, SocketTimeoutException {
         if (isRead) {
-            if (errnoException.errno == EAGAIN || errnoException.errno == EWOULDBLOCK) {
+            if (errnoException.errno == EAGAIN) {
                 return 0;
             } else {
                 throw errnoException.rethrowAsSocketException();
@@ -547,7 +547,7 @@ public final class IoBridge {
         } else {
             if (isConnected && errnoException.errno == ECONNREFUSED) {
                 throw new PortUnreachableException("", errnoException);
-            } else if (errnoException.errno == EAGAIN || errnoException.errno == EWOULDBLOCK) {
+            } else if (errnoException.errno == EAGAIN) {
                 throw new SocketTimeoutException(errnoException);
             } else {
                 throw errnoException.rethrowAsSocketException();

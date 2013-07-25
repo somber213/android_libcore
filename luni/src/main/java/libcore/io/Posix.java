@@ -58,6 +58,7 @@ public final class Posix implements Os {
     public native int getgid();
     public native String getenv(String name);
     public native String getnameinfo(InetAddress address, int flags) throws GaiException;
+    public native SocketAddress getpeername(FileDescriptor fd) throws ErrnoException;
     public native int getpid();
     public native int getppid();
     public native StructPasswd getpwnam(String name) throws ErrnoException;
@@ -68,6 +69,7 @@ public final class Posix implements Os {
     public native int getsockoptInt(FileDescriptor fd, int level, int option) throws ErrnoException;
     public native StructLinger getsockoptLinger(FileDescriptor fd, int level, int option) throws ErrnoException;
     public native StructTimeval getsockoptTimeval(FileDescriptor fd, int level, int option) throws ErrnoException;
+    public native StructUcred getsockoptUcred(FileDescriptor fd, int level, int option) throws ErrnoException;
     public native int getuid();
     public native String if_indextoname(int index);
     public native InetAddress inet_pton(int family, String address);
@@ -154,6 +156,7 @@ public final class Posix implements Os {
     }
     private native int sendtoBytes(FileDescriptor fd, Object buffer, int byteOffset, int byteCount, int flags, InetAddress inetAddress, int port) throws ErrnoException, SocketException;
     public native void setegid(int egid) throws ErrnoException;
+    public native void setenv(String name, String value, boolean overwrite) throws ErrnoException;
     public native void seteuid(int euid) throws ErrnoException;
     public native void setgid(int gid) throws ErrnoException;
     public native int setsid() throws ErrnoException;
@@ -171,11 +174,20 @@ public final class Posix implements Os {
     public native StructStat stat(String path) throws ErrnoException;
     public native StructStatFs statfs(String path) throws ErrnoException;
     public native String strerror(int errno);
+    public native String strsignal(int signal);
     public native void symlink(String oldPath, String newPath) throws ErrnoException;
     public native long sysconf(int name);
     public native void tcdrain(FileDescriptor fd) throws ErrnoException;
-    public native int umask(int mask);
+    public native void tcsendbreak(FileDescriptor fd, int duration) throws ErrnoException;
+    public int umask(int mask) {
+        if ((mask & 0777) != mask) {
+            throw new IllegalArgumentException("Invalid umask: " + mask);
+        }
+        return umaskImpl(mask);
+    }
+    private native int umaskImpl(int mask);
     public native StructUtsname uname();
+    public native void unsetenv(String name) throws ErrnoException;
     public native int waitpid(int pid, MutableInt status, int options) throws ErrnoException;
     public int write(FileDescriptor fd, ByteBuffer buffer) throws ErrnoException {
         if (buffer.isDirect()) {
